@@ -469,89 +469,115 @@ d1_phonTools <- phonTools::spectrogram(
 > AD: This also generates ggplot objects. You can play with the "ampTran =" parameter to increase contrast between sounds and background... basically, it transforms the amplitude axis making it nonlinear. Try setting at 2.5. I personlly don't like the nonlinear color gradient.
 
 ```{r Using dyanSpec::prep_static_ggspectro()}
-d1_dynaSpec <- prep_static_ggspectro(
+
+ampTrans <- 1
+
+d1_dynaSpec <- dynaSpec::prep_static_ggspectro(
   f1,
   colPal = c("white", "black"),
-  xLim = c(0,20),
-  yLim =c(0,3),
+  xLim = c(0, 20),
+  yLim = c(0, 3),
   onlyPlotSpec = FALSE,
   crop = F,
   plotLegend = TRUE,
   ovlp = 50,
   wn = "hanning",
-  ampTrans = 1,
+  ampTrans = ampTrans,
   wl = 512,
   min_dB = -35
 )
 
-d2_dynaSpec <- prep_static_ggspectro(
-  f2,
+d2_dynaSpec <- dynaSpec::prep_static_ggspectro(
+    f2,
   colPal = c("white", "black"),
-  xLim = c(0,20),
-  yLim =c(0,3),
+  xLim = c(0, 20),
+  yLim = c(0, 3),
   onlyPlotSpec = FALSE,
   crop = F,
   plotLegend = TRUE,
   ovlp = 50,
   wn = "hanning",
-  ampTrans = 1,
+  ampTrans = ampTrans,
   wl = 512,
   min_dB = -35
 )
 
-d3_dynaSpec <- prep_static_ggspectro(
+d3_dynaSpec <- dynaSpec::prep_static_ggspectro(
   f3,
   colPal = c("white", "black"),
-  xLim = c(0,20),
-  yLim =c(0,3),
+  xLim = c(0, 20),
+  yLim =c(0, 3),
   onlyPlotSpec = FALSE,
   crop = F,
   plotLegend = TRUE,
   ovlp = 50,
   wn = "hanning",
-  ampTrans = 1,
+  ampTrans = ampTrans,
   wl = 512,
   min_dB = -35
 )
 
-d4_dynaSpec <- prep_static_ggspectro(
+d4_dynaSpec <- dynaSpec::prep_static_ggspectro(
   f4,
   colPal = c("white", "black"),
-  xLim = c(0,20),
-  yLim =c(0,3),
+  xLim = c(0, 20),
+  yLim = c(0, 3),
   onlyPlotSpec = FALSE,
   crop = F,
   plotLegend = TRUE,
   ovlp = 50,
   wn = "hanning",
-  ampTrans = 1,
+  ampTrans = ampTrans,
   wl = 512,
   min_dB = -35
 )
+
+## PLOT GRID
+### Here, we focus on the first page [[1]] of the this spectrogram, which is for the first 20 sec. The function generates a second page [[2]] because all WAV files are longer than 20 sec
+combined_plot <- cowplot::plot_grid(
+  d1_dynaSpec$spec[[1]] + theme(legend.position = "none"),
+  d2_dynaSpec$spec[[1]] + theme(legend.position = "none"),
+  d3_dynaSpec$spec[[1]] + theme(legend.position = "none"),
+  d4_dynaSpec$spec[[1]] + theme(legend.position = "none"),
+  ncol = 2,
+  align = 'vh',
+  labels = c("A", "B", "C", "D"))
+
+legend <- get_legend(
+  # create some space to the left of the legend
+  d1_dynaSpec$spec[[1]] + theme(legend.box.margin = margin(0, 0, 0, 12))
+)
+
+(combined_plot <-
+    cowplot::plot_grid(combined_plot, legend, rel_widths = c(9, 1.5)))
 ```
+
+> AD: This is a pretty good 4-panel plot as well...
 
 # Other Options
 
 ```{r Using bioacoustics::spectro()}
-d1_bioacoustics <- bioacoustics::spectro(wav1, FFT_size = 512, FFT_overlap = 0.5, FFT_win = "hann")
+d1_bioacoustics <- bioacoustics::spectro(wav1, FFT_size = 512, FFT_overlap = 0.5, FFT_win = "hann", flim = c(0, 3000))
 
-d2_bioacoustics <- bioacoustics::spectro(wav2, FFT_size = 512, FFT_overlap = 0.5, FFT_win = "hann")
+d2_bioacoustics <- bioacoustics::spectro(wav2, FFT_size = 512, FFT_overlap = 0.5, FFT_win = "hann", flim = c(0, 3000))
 
-d3_bioacoustics <- bioacoustics::spectro(wav1, FFT_size = 512, FFT_overlap = 0.5, FFT_win = "hann")
+d3_bioacoustics <- bioacoustics::spectro(wav1, FFT_size = 512, FFT_overlap = 0.5, FFT_win = "hann", flim = c(0, 3000))
 
-d4_bioacoustics <- bioacoustics::spectro(wav1, FFT_size = 512, FFT_overlap = 0.5, FFT_win = "hann")
+d4_bioacoustics <- bioacoustics::spectro(wav1, FFT_size = 512, FFT_overlap = 0.5, FFT_win = "hann", flim = c(0, 3000))
 ```
 
+> AD: This is not a great option because possibilities for customizing plots and making multipanel plots is poor. Even adding axis titles is not easy.
+
 ```{r Using monitoR::viewSpec()}
-d1_monitor <- viewSpec(
+d1_monitor <- monitoR::viewSpec(
   f1,
-  frq.lim = c(0, 5),
+  frq.lim = c(0, 3),
   wl = 512,
   ovlp = 0.5,
   wn = "hanning"
 )
 
-d2_monitor <- viewSpec(
+d2_monitor <- monitoR::viewSpec(
   f2,
   frq.lim = c(0, 5),
   wl = 512,
@@ -559,7 +585,7 @@ d2_monitor <- viewSpec(
   wn = "hanning"
 )
 
-d3_monitor <- viewSpec(
+d3_monitor <- monitoR::viewSpec(
   f3,
   frq.lim = c(0, 5),
   wl = 512,
@@ -567,7 +593,7 @@ d3_monitor <- viewSpec(
   wn = "hanning"
 )
 
-d4_monitor <- viewSpec(
+d4_monitor <- monitoR::viewSpec(
   f4,
   frq.lim = c(0, 5),
   wl = 512,
@@ -576,8 +602,75 @@ d4_monitor <- viewSpec(
 )
 ```
 
-```{r Using warbleR::specreator()}
-  # Cannot get this one to work either.
-warbleR::specreator(wav2, flim = c(0, 5), res = 300, mar = 0.05, wl = 300)
+> AD: Again, this is not a great option because possibilities for customizing plots and making multipanel plots is poor. 
 
+```{r Using warbleR::specreator()}
+# SVB was not able to get this one to work
+# AD: read in a file list and generate complete spectrograms for entire file... to generate spectrograms for a subset of the file, need to first generate a selection table OR write out WAV files of just the segments of interest
+
+warbleR::full_spectrograms(flist = c(f1, f2, f3, f4), wl = 512, flim = c(0, 3), ovlp = 50, sxrow = 35, rows = 1, it = "jpeg", res = 300) # all files are under 35 sec, set output res at 300 dpi
 ```
+
+> AD: Code above generates 4 jpeg files, one for each WAV file. They look pretty good!
+
+
+```{r Using tuneR::periodogram()}
+d1_tuneR <- tuneR::periodogram(
+  wav1,
+  width = 512,
+  overlap = 0.5,
+  frqRange = c(0, 3000)
+)
+d2_tuneR <- tuneR::periodogram(
+  wav2,
+  width = 512,
+  overlap = 0.5,
+  frqRange = c(0, 3000)
+)
+d3_tuneR <- tuneR::periodogram(
+  wav3,
+  width = 512,
+  overlap = 0.5,
+  frqRange = c(0, 3000)
+)
+d4_tuneR <- tuneR::periodogram(
+  wav4,
+  width = 512,
+  overlap = 0.5,
+  frqRange = c(0, 3000)
+)
+
+image(d1_tuneR,
+      col = gray.colors(30, start = 0, end = 1, gamma = 0.25, rev = TRUE),
+      add = FALSE,
+      xaxs = "i",
+      yaxs = "i")
+
+image(d2_tuneR,
+      col = gray.colors(30, start = 0, end = 1, gamma = 0.25, rev = TRUE),
+      add = FALSE,
+      xaxs = "i",
+      yaxs = "i")
+
+image(d3_tuneR,
+      col = gray.colors(30, start = 0, end = 1, gamma = 0.25, rev = TRUE),
+      add = FALSE,
+      xaxs = "i",
+      yaxs = "i")
+
+image(d4_tuneR,
+      col = gray.colors(30, start = 0, end = 1, gamma = 0.25, rev = TRUE),
+      add = FALSE,
+      xaxs = "i",
+      yaxs = "i")
+```
+
+> AD: Once again, this is not a great option because possibilities for customizing plots and making multipanel plots is poor. Plots are generated in {base} R and would need to combine into multipanel plot using the `par()` function.
+
+```{r Using signal::specgram()}
+d1_signal <- signal::specgram(wav1@left, n = 512, Fs = 16, window = 512, overlap = 0.5)
+
+# etc...
+```
+
+> AD: Once again, this is not a great option because possibilities for customizing plots and making multipanel plots is poor. Plots are generated in {base} R and would need to combine into multipanel plot using the `par()` function.
