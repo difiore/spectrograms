@@ -1,0 +1,583 @@
+---
+title: "OPTIONS FOR CREATING SPECTROGRAMS"
+author: "Silvy van Kuijk with modifications and additions by Anthony Di Fiore""
+date: "2023-05-21"
+---
+
+# Load Packages
+
+```{r Load Packages}
+library(pacman)
+packages <- c("tidyverse",
+              "lubridate",
+              "tuneR",
+              "seewave",
+              "soundgen",
+              "phonTools",
+              "dynaSpec",
+              "cowplot", # for plot_grid()
+              "viridis" # for inferno()
+              )
+p_load(char = packages) # Load multiple packages
+```
+
+# Read in Sound Files
+
+> SVK: Change the section that it loads into R by adjusting the "from =" and "to =" parameters.
+
+```{r Read in Sound Files}
+f1 <- 'PUMA_20140214_071500_dist1.wav'
+f2 <- 'HARPIA_20170216_073000_Fig2.wav'
+f3 <- 'HARPIA_20160204_073000_dist3.wav'
+f4 <- 'HARPIA_20170213_071500_dist4.wav'
+
+wav1 <- tuneR::readWave(f1, from = 1, to = 21, units = c("seconds"))
+wav2 <- tuneR::readWave(f2, from = 1, to = 21, units = c("seconds"))
+wav3 <- tuneR::readWave(f3, from = 1, to = 21, units = c("seconds"))
+wav4 <- tuneR::readWave(f4, from = 1, to = 21, units = c("seconds"))
+```
+
+# Package *soundgen*
+
+> SVK: Add "savePlots = [path]" within the `spectrogram()` function to save the spectrogram images!
+
+> SVK: This package seemed most promising. This leads to pretty good looking images, but I cannot combine them into one image and I cannot seem to edit the axes (like removing 's' behind each number of the x-axis).
+
+> AD: The {soundgen} `spectrogram` function does not return a plot but rather a data matrix. The package has multiple internal functions that is called by `spectrogram`, to actually produce the spectrogram and create plots. I tried creating my own versions of the relevant {soundgen} functions, which would allow you to modify aspects of the plotting, e.g., by tweaking elements of `my_plotSpec()` and other functions. However, these functions use {base} R graphics, and plotting is embedded within function calls from within other functions, so it is not clear or easy to return plots from multiple internal functions to the top level function call. The best bet, if you want to use {soundgen} figures, is to use the `savePlots` argument and then assemble the resultant "*.png" files either with separate R code or in PowerPoint.
+
+```{r Using soundgen::spectrogram()}
+d1_soundgen <- soundgen::spectrogram(
+  wav1,
+  yScale = 'linear',
+  wn = 'hanning',
+  noiseReduction = 0.2,
+  ylim = c(0, 5),
+  osc = 'none',
+  width = 1800,
+  height = 1000,
+  cex.lab = 1,
+  plot = TRUE)
+
+d2_soundgen <- soundgen::spectrogram(
+  wav2,
+  yScale = 'linear',
+  wn = 'hanning',
+  noiseReduction = 0.2,
+  ylim = c(0, 5),
+  osc = 'none',
+  width = 1800,
+  height = 1000,
+  cex.lab = 1,
+  plot = TRUE)
+
+d3_soundgen <- soundgen::spectrogram(
+  wav3,
+  yScale = 'linear',
+  wn = 'hanning',
+  noiseReduction = 0.2,
+  ylim = c(0, 5),
+  osc = 'none',
+  width = 1800,
+  height = 1000,
+  cex.lab = 1,
+  plot = TRUE)
+
+d4_soundgen <- soundgen::spectrogram(
+  wav4,
+  yScale = 'linear',
+  wn = 'hanning',
+  noiseReduction = 0.2,
+  ylim = c(0, 5),
+  osc = 'none',
+  width = 1800,
+  height = 1000,
+  cex.lab = 1,
+  plot = TRUE)
+```
+
+> AD: If you did want to use my modifications...
+
+```{r Using custom versions of *soundgen* functions}
+source("my_soundgen_functions.R")
+
+d1_soundgen <- my_spectrogram(
+  wav1,
+  yScale = 'linear',
+  wn = 'hanning',
+  noiseReduction = 0.2,
+  ylim = c(0, 5),
+  osc = 'none',
+  width = 1800,
+  height = 1000,
+  cex.lab = 1,
+  savePlots = "~/Desktop/dist1",
+  plot = TRUE)
+
+# etc...
+```
+
+# Package *seewave*
+
+> SVK: You can add an oscillogram below the spectrogram by changing "osc =" to TRUE, but the spectrogram -- even with noisereduction at zero -- just looks too washed out. The axes here look exactly like they should for publication though, unlike the former package.
+
+> AD: Again, as with *soundgen*, plotting is done within the *seewave* `spectro()` spectrogram-generating function (specifically, by another function called `filled.contour.modif2()`), so what is returned is not a plot object, making it difficult to combine these in a single figure.
+
+> AD: Note... from here on, I have changed frequency limit to cut off at 3 kHz instead of 5
+
+```{r Using seewave::spectro()}
+d1_seewave <- spectro(
+  wav1,
+  flim = c(0, 3),
+  noisereduction = NULL,
+  tlim = c(0,20),
+  wl = 512,
+  ovlp = 50,
+  plot = TRUE,
+  palette = reverse.gray.colors.2,
+  osc = TRUE
+  )
+
+# etc...
+```
+
+> AD: The approach above creates nice images (including with oscillogram/waveform), but `ggspectro()` (below) is a better alternative, I think
+
+```{r Using seewave::ggspectro()}
+## BUILD SPECTROGRAMS
+d1_ggspectro <- ggspectro(
+    wav1,
+    f = 16000,
+    flim = c(0,3),
+    noisereduction = NULL,
+    tlim = c(0,20),
+    wl = 512,
+    ovlp = 50
+  ) +
+  stat_contour(
+     geom = "polygon",
+     aes(fill = after_stat(level)),
+     bins = 30
+   ) +
+  scale_fill_continuous(
+    name = "Amplitude\n(dB)\n",
+    limits = c(-35,0),
+    na.value = "transparent",
+    low = "white",
+    high = "black"
+  ) +
+  theme_bw() +
+  theme(
+    plot.margin = margin(t = 20, r = 10, b = 10, l = 20, unit = "pt")
+  )
+
+d2_ggspectro <- ggspectro(
+    wav2,
+    f = 16000,
+    flim = c(0,3),
+    noisereduction = NULL,
+    tlim = c(0,20),
+    wl = 512,
+    ovlp = 50
+  ) +
+  stat_contour(
+    geom = "polygon",
+    aes(fill = after_stat(level)),
+    bins = 30
+  ) +
+  scale_fill_continuous(
+    name = "Amplitude\n(dB)\n",
+    limits = c(-35,0),
+    na.value = "transparent",
+    low = "white",
+    high = "black"
+  ) +
+  theme_bw() +
+  theme(
+    plot.margin = margin(t = 20, r = 10, b = 10, l = 20, unit = "pt")
+  )
+
+d3_ggspectro <- ggspectro(
+    wav3,
+    f = 16000,
+    flim = c(0,3),
+    noisereduction = NULL,
+    tlim = c(0,20),
+    wl = 512,
+    ovlp = 50
+  ) +
+  stat_contour(
+    geom = "polygon",
+    aes(fill = after_stat(level)),
+    bins = 30
+  ) +
+  scale_fill_continuous(
+    name = "Amplitude\n(dB)\n",
+    limits = c(-35,0),
+    na.value = "transparent",
+    low = "white",
+    high = "black"
+  ) +
+  theme_bw() +
+  theme(
+    plot.margin = margin(t = 20, r = 10, b = 10, l = 20, unit = "pt")
+  )
+
+d4_ggspectro <- ggspectro(
+    wav4,
+    f = 16000,
+    flim = c(0,3),
+    noisereduction = NULL,
+    tlim = c(0,20),
+    wl = 512,
+    ovlp = 50
+  ) +
+  stat_contour(
+    geom = "polygon",
+    aes(fill = after_stat(level)),
+    bins = 30
+  ) +
+  scale_fill_continuous(
+    name = "Amplitude\n(dB)\n",
+    limits = c(-35,0),
+    na.value = "transparent",
+    low = "white",
+    high = "black"
+  ) +
+  theme_bw() +
+  theme(
+    plot.margin = margin(t = 20, r = 10, b = 10, l = 20, unit = "pt")
+  )
+
+## PLOT GRID
+combined_plot <- cowplot::plot_grid(
+  d1_ggspectro + theme(legend.position = "none"),
+  d2_ggspectro + theme(legend.position = "none"),
+  d3_ggspectro + theme(legend.position = "none"),
+  d4_ggspectro + theme(legend.position = "none"),
+  ncol = 2,
+  align = 'vh',
+  labels = c("A", "B", "C", "D"))
+
+legend <- get_legend(
+  # create some space to the left of the legend
+  d1_ggspectro + theme(legend.box.margin = margin(0, 0, 0, 12))
+)
+
+(combined_plot <-
+    cowplot::plot_grid(combined_plot, legend, rel_widths = c(9, 1.5)))
+```
+
+> AD: **This** to me seems the best option... it's the most customizable and creates {ggplot} objects, which can easily be combined into multipanel figures. I like the greyscale theme and white background, but below is an alternative based on your code.
+
+> SVK: This one is so cool! This might be one of our best options (with some modifications of colors)? (Code modified from: https://rug.mnhn.fr/seewave/spec.html)
+
+> AD: I have played with and modified your code to create a 4-panel image.
+
+```{r Alternative using seewave::ggspectro()}
+## PLOT LABELLERS
+### x label formatter (to add "s" to X axis)
+s_formatter <- function(x){
+  lab <- paste0(x, " s")
+}
+### y label formatter (to add kHz to Y axis)
+khz_formatter <- function(y){
+  lab <- paste0(y, " kHz")
+}
+
+## CREATE THEME
+hot_theme <- theme(
+  plot.margin = margin(t = 20, r = 10, b = 10, l = 20, unit = "pt"),
+  panel.grid.major.y = element_line(
+    color = "black", linetype = "dotted"),
+  panel.grid.major.x = element_blank(),
+  panel.grid.minor = element_blank(),
+  panel.background = element_rect(
+    fill = "transparent"),
+  panel.border = element_rect(
+    linetype = "solid", fill = NA, color = "grey"),
+  axis.line = element_blank(),
+  legend.position = "right",
+  legend.justification = "left",
+  legend.background = element_rect(fill = "black"),
+  legend.key.width = unit(20, "native"),
+  legend.title = element_text(size = 12, color = "grey"),
+  legend.text = element_text(size = 12, color = "grey"),
+  plot.background = element_rect(fill = "black"),
+  axis.title = element_blank(),
+  axis.text = element_text(size = 12, color = "grey"),
+  axis.ticks = element_line(color = "grey"))
+
+## SET COLORS
+hot_colors <- inferno(n = 9)
+
+## BUILD SPECTROGRAMS
+d1_ggspectro <-
+  ggspectro(
+    wave = wav1,
+    f = wav1@samp.rate,
+    ovlp = 50
+  ) +
+  scale_x_continuous(labels = s_formatter) +
+  scale_y_continuous(
+    breaks = seq(from = 0, to = 3, by = 0.5),
+    limits = c(0, 3),
+    labels = khz_formatter,
+    position = "left"
+  ) +
+  geom_raster(
+    aes(fill = amplitude),
+    hjust = 0,
+    vjust = 0,
+    interpolate = F
+  ) +
+  scale_fill_gradientn(
+    colours = hot_colors,
+    name = "Amplitude\n(dB)\n",
+    na.value = "transparent",
+    limits = c(-35,0)
+  ) +
+  hot_theme
+
+d2_ggspectro <-
+  ggspectro(
+    wave = wav2,
+    f = wav2@samp.rate,
+    ovlp = 50
+  ) +
+    scale_x_continuous(labels = s_formatter) +
+  scale_y_continuous(
+    breaks = seq(from = 0, to = 3, by = 0.5),
+    limits = c(0, 3),
+    labels = khz_formatter,
+    position = "left"
+  ) +
+  geom_raster(
+    aes(fill = amplitude),
+    hjust = 0,
+    vjust = 0,
+    interpolate = F
+  ) +
+  scale_fill_gradientn(
+    colours = hot_colors,
+    name = "Amplitude\n(dB)\n",
+    na.value = "transparent",
+    limits = c(-35,0)
+  ) +
+  hot_theme
+
+d3_ggspectro <-
+  ggspectro(
+    wave = wav3,
+    f = wav3@samp.rate,
+    ovlp = 50
+  ) +
+    scale_x_continuous(labels = s_formatter) +
+  scale_y_continuous(
+    breaks = seq(from = 0, to = 3, by = 0.5),
+    limits = c(0, 3),
+    labels = khz_formatter,
+    position = "left"
+  ) +
+  geom_raster(
+    aes(fill = amplitude),
+    hjust = 0,
+    vjust = 0,
+    interpolate = F
+  ) +
+  scale_fill_gradientn(
+    colours = hot_colors,
+    name = "Amplitude\n(dB)\n",
+    na.value = "transparent",
+    limits = c(-35,0)
+  ) +
+  hot_theme
+
+d4_ggspectro <-
+  ggspectro(
+    wave = wav4,
+    f = wav4@samp.rate,
+    ovlp = 50
+  ) +
+    scale_x_continuous(labels = s_formatter) +
+  scale_y_continuous(
+    breaks = seq(from = 0, to = 3, by = 0.5),
+    limits = c(0, 3),
+    labels = khz_formatter,
+    position = "left"
+  ) +
+  geom_raster(
+    aes(fill = amplitude),
+    hjust = 0,
+    vjust = 0,
+    interpolate = F
+  ) +
+  scale_fill_gradientn(
+    colours = hot_colors,
+    name = "Amplitude\n(dB)\n",
+    na.value = "transparent",
+    limits = c(-35,0)
+  ) +
+  hot_theme
+
+## PLOT GRID
+combined_plot <- cowplot::plot_grid(
+  d1_ggspectro + theme(legend.position = "none"),
+  d2_ggspectro + theme(legend.position = "none"),
+  d3_ggspectro + theme(legend.position = "none"),
+  d4_ggspectro + theme(legend.position = "none"),
+  ncol = 2,
+  align = 'vh',
+  labels = c("A", "B", "C", "D"),
+  label_colour = "grey")
+
+legend <- get_legend(
+  # create some space to the left of the legend
+  d1_ggspectro + theme(legend.box.margin = margin(0, 0, 0, 12))
+)
+
+(combined_plot <-
+  cowplot::plot_grid(combined_plot, legend, rel_widths = c(9, 1.5)) +
+  theme(plot.background = element_rect(fill = "black")))
+```
+
+# Package *phonTools*
+
+> SVK: Recommended by Dena, but cannot get this to work.
+
+> AD: The modified code below is slow but works. This seems to me to be a clunky package and it is VERY slow, especially if windowlength is long.
+
+```{r Using phonTools::spectrogram()}
+# first, make a sound object... we cannot use `loadsound()` because our WAV files are not mono
+sound <- makesound(wav1@left, "d1", fs = 16000)
+# then, create spectrogram
+d1_phonTools <- phonTools::spectrogram(
+  sound,
+  fs = 16000,
+  windowlength = 5,
+  colors = FALSE,
+  quality = TRUE,
+  window = "hann",
+  maxfreq = 3000,
+  dynamicrange = 35
+)
+
+# etc...
+```
+
+# Package *dyanSpec*
+
+> AD: This also generates ggplot objects. You can play with the "ampTran =" parameter to increase contrast between sounds and background... basically, it transforms the amplitude axis making it nonlinear. Try setting at 2.5. I personlly don't like the nonlinear color gradient.
+
+```{r Using dyanSpec::prep_static_ggspectro()}
+d1_dynaSpec <- prep_static_ggspectro(
+  f1,
+  colPal = c("white", "black"),
+  xLim = c(0,20),
+  yLim =c(0,3),
+  onlyPlotSpec = FALSE,
+  crop = F,
+  plotLegend = TRUE,
+  ovlp = 50,
+  wn = "hanning",
+  ampTrans = 1,
+  wl = 512,
+  min_dB = -35
+)
+
+d2_dynaSpec <- prep_static_ggspectro(
+  f2,
+  colPal = c("white", "black"),
+  xLim = c(0,20),
+  yLim =c(0,3),
+  onlyPlotSpec = FALSE,
+  crop = F,
+  plotLegend = TRUE,
+  ovlp = 50,
+  wn = "hanning",
+  ampTrans = 1,
+  wl = 512,
+  min_dB = -35
+)
+
+d3_dynaSpec <- prep_static_ggspectro(
+  f3,
+  colPal = c("white", "black"),
+  xLim = c(0,20),
+  yLim =c(0,3),
+  onlyPlotSpec = FALSE,
+  crop = F,
+  plotLegend = TRUE,
+  ovlp = 50,
+  wn = "hanning",
+  ampTrans = 1,
+  wl = 512,
+  min_dB = -35
+)
+
+d4_dynaSpec <- prep_static_ggspectro(
+  f4,
+  colPal = c("white", "black"),
+  xLim = c(0,20),
+  yLim =c(0,3),
+  onlyPlotSpec = FALSE,
+  crop = F,
+  plotLegend = TRUE,
+  ovlp = 50,
+  wn = "hanning",
+  ampTrans = 1,
+  wl = 512,
+  min_dB = -35
+)
+```
+
+# Other Options
+
+```{r Using bioacoustics::spectro()}
+d1_bioacoustics <- bioacoustics::spectro(wav1, FFT_size = 512, FFT_overlap = 0.5, FFT_win = "hann")
+
+d2_bioacoustics <- bioacoustics::spectro(wav2, FFT_size = 512, FFT_overlap = 0.5, FFT_win = "hann")
+
+d3_bioacoustics <- bioacoustics::spectro(wav1, FFT_size = 512, FFT_overlap = 0.5, FFT_win = "hann")
+
+d4_bioacoustics <- bioacoustics::spectro(wav1, FFT_size = 512, FFT_overlap = 0.5, FFT_win = "hann")
+```
+
+```{r Using monitoR::viewSpec()}
+d1_monitor <- viewSpec(
+  f1,
+  frq.lim = c(0, 5),
+  wl = 512,
+  ovlp = 0.5,
+  wn = "hanning"
+)
+
+d2_monitor <- viewSpec(
+  f2,
+  frq.lim = c(0, 5),
+  wl = 512,
+  ovlp = 0.5,
+  wn = "hanning"
+)
+
+d3_monitor <- viewSpec(
+  f3,
+  frq.lim = c(0, 5),
+  wl = 512,
+  ovlp = 0.5,
+  wn = "hanning"
+)
+
+d4_monitor <- viewSpec(
+  f4,
+  frq.lim = c(0, 5),
+  wl = 512,
+  ovlp = 0.5,
+  wn = "hanning"
+)
+```
+
+```{r Using warbleR::specreator()}
+  # Cannot get this one to work either.
+warbleR::specreator(wav2, flim = c(0, 5), res = 300, mar = 0.05, wl = 300)
+
+```
