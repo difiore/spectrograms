@@ -506,7 +506,7 @@ d3_dynaSpec <- dynaSpec::prep_static_ggspectro(
   f3,
   colPal = c("white", "black"),
   xLim = c(0, 20),
-  yLim =c(0, 3),
+  yLim = c(0, 3),
   onlyPlotSpec = FALSE,
   crop = F,
   plotLegend = TRUE,
